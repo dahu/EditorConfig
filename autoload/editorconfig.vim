@@ -1,3 +1,41 @@
+" Vim library for parsing and processing editorconfig files
+" Maintainer:	Barry Arthur <barry.arthur@gmail.com>
+" License:	Vim License (see :help license)
+" Location:	autoload/editorconfig.vim
+" Website:	https://github.com/dahu/editorconfig
+"
+" See editorconfig.txt for help.  This can be accessed by doing:
+"
+" :helptags ~/.vim/doc
+" :help editorconfig
+
+" Vimscript Setup: {{{1
+" Allow use of line continuation.
+let s:save_cpo = &cpo
+set cpo&vim
+
+" if exists("g:loaded_lib_editorconfig")
+"       \ || v:version < 700
+"       \ || v:version == 703 && !has('patch338')
+"       \ || &compatible
+"   let &cpo = s:save_cpo
+"   finish
+" endif
+let g:loaded_lib_editorconfig = 1
+
+" Vim Script Information Function: {{{1
+" Use this function to return information about your script.
+function! editorconfig#info()
+  let info = {}
+  let info.name = 'editorconfig'
+  let info.version = 1.0
+  let info.description = 'Parsing and processing editorconfig files'
+  let info.dependencies = []
+  return info
+endfunction
+
+" Private Functions {{{1
+
 function! s:trim(string)
   return matchstr(a:string, '^\s*\zs.\{-}\ze\s*$')
 endfunction
@@ -25,6 +63,8 @@ function! s:optval(line)
   let val = s:trim(strpart(a:line, sep+1))
   return [opt, val]
 endfunction
+
+" Public Interface {{{1
 
 function! editorconfig#parse(data)
   if type(a:data) == type('')
@@ -105,3 +145,10 @@ function! editorconfig#init(...)
   let config.global.root = root
   return config
 endfunction
+
+" Teardown:{{{1
+"reset &cpo back to users setting
+let &cpo = s:save_cpo
+
+" Template From: https://github.com/dahu/Area-41/
+" vim: set sw=2 sts=2 et fdm=marker:
