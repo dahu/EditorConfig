@@ -39,6 +39,7 @@ function! editorconfig#parse(data)
   let config             = {}
   let config.global      = {}
   let config.global.root = ''
+  let config.glob_list   = []
   let config.globs       = {}
   let glob               = ''
   let options            = {}
@@ -54,6 +55,7 @@ function! editorconfig#parse(data)
       call s:extend(glob, config, options)
       let options = {}
       let glob = strpart(line, 1, len(line)-2)
+      call add(config.glob_list, glob)
     elseif line =~ '^\w\+\s*[=:]\s*\w'
       let [opt, val] = s:optval(line)
       let options[opt] = val
@@ -67,11 +69,13 @@ function! editorconfig#parse(data)
 endfunction
 
 function! editorconfig#init(...)
-  let path = a:0 ? a:1 : '.'
-  let configs = []
-  let config = {}
-  let config.global = {}
-  let config.globs = {}
+  let path             = a:0 ? a:1 : '.'
+  let configs          = []
+  let config           = {}
+  let config.global    = {}
+  let config.glob_list = []
+  let config.globs     = {}
+
   for f in findfile("_editorconfig", path . ';', -1)
     try
       let c = editorconfig#parse(f)
@@ -85,6 +89,11 @@ function! editorconfig#init(...)
   endfor
   for c in configs
     call extend(config.global, c.global, "keep")
+    for glob in c.glob_list
+      if index(config.glob_list, glob) == -1
+        call add(config.glob_list, glob)
+      endif
+    endfor
     for [glob, opts] in items(c.globs)
       if ! has_key(config.globs, glob)
         let config.globs[glob] = {}
