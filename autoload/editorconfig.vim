@@ -38,7 +38,7 @@ function! editorconfig#parse(data)
 
   let config             = {}
   let config.global      = {}
-  let config.global.root = 0
+  let config.global.root = ''
   let config.globs       = {}
   let glob               = ''
   let options            = {}
@@ -66,4 +66,33 @@ function! editorconfig#parse(data)
   return config
 endfunction
 
-function! editorconfig#
+function! editorconfig#init(...)
+  let path = a:0 ? a:1 : '.'
+  let configs = []
+  let config = {}
+  let config.global = {}
+  let config.globs = {}
+  for f in findfile("_editorconfig", path . ';', -1)
+    try
+      let c = editorconfig#parse(f)
+    catch /editorconfig#parse : Error/
+      throw 'editorconfig#init : Error : ' . f . ', ' . v:exception
+    endtry
+    call add(configs, c)
+    if c.global.root ==? 'true'
+      break
+    endif
+  endfor
+  for c in configs
+    call extend(config.global, c.global, "keep")
+    for [glob, opts] in items(c.globs)
+      if ! has_key(config.globs, glob)
+        let config.globs[glob] = {}
+      endif
+      call extend(config.globs[glob], opts, "keep")
+    endfor
+    let root = c.global.root
+  endfor
+  let config.global.root = root
+  return config
+endfunction
