@@ -36,6 +36,57 @@ endfunction
 
 " Private Functions {{{1
 
+function! s:set_option(option, value, bufnr)
+  let all_options = {
+        \  'indent_style'             : {
+        \    'space' : ['setlocal et']
+        \   ,'tab'   : ['setlocal noet']
+        \  }
+        \ ,'indent_size'              : {
+        \    'tab'     : ['setlocal sw=0']
+        \   ,'^\d\+$'  : ['setlocal sw=' . a:value]
+        \  }
+        \ ,'tab_width'                : {
+        \    '^\d\+$'  : ['setlocal ts=8 sts=' . a:value . ' sw=' . a:value]
+        \  }
+        \ ,'end_of_line'              : {
+        \    'lf'   : ['setlocal ff=unix']
+        \   ,'cr'   : ['setlocal ff=mac']
+        \   ,'crlf' : ['setlocal ff=dos']
+        \  }
+        \ ,'charset'                  : {
+        \    'latin1'   : ['edit ++enc=' . a:value]
+        \   ,'utf-8'    : ['edit ++enc=' . a:value]
+        \   ,'utf-16be' : ['edit ++enc=' . a:value]
+        \   ,'utf-16le' : ['edit ++enc=' . a:value]
+        \  }
+        \ ,'trim_trailing_whitespace' : {
+        \    'true'  : []
+        \   ,'false' : []
+        \  }
+        \ ,'insert_final_newline'     : {
+        \    'true'  : []
+        \   ,'false' : []
+        \  }
+        \ ,'max_line_length'          : {
+        \    '^\d\+$'  : ['setlocal tw=' . a:value]
+        \  }
+        \}
+  let option = all_options[a:option]
+  for subopt in keys(option)
+    if a:value =~ subopt
+      let commands = option[subopt]
+    endif
+  endfor
+  for c in commands
+    exe c
+  endfor
+endfunction
+
+function! s:snake_to_camel(name)
+  return substitute(substitute(tolower(a:name), '^\w', '\U&', ''), '_\(\w\)', '\U\1', 'g')
+endfunction
+
 function! s:trim(string)
   return matchstr(a:string, '^\s*\zs.\{-}\ze\s*$')
 endfunction
@@ -59,9 +110,22 @@ function! s:optval(line)
       throw "editorconfig#s:optval : Error : Internal : entry line doesn't contain '=' or ':'"
     endif
   endif
-  let opt = s:trim(strpart(a:line, 0, sep))
+  let opt = s:trim(tolower(strpart(a:line, 0, sep)))
   let val = s:trim(strpart(a:line, sep+1))
   return [opt, val]
+endfunction
+
+function! s:glob_to_vim(glob, ...)
+  let glob = a:glob
+  let globs = a:0 ? a:1 : []
+  if glob =~ '^{.*}$'
+    for g in split(glob[1:-2], '\\\@<!,')
+      call s:glob_to_vim(g, globs)
+    endfor
+  else
+    call add(globs, substitute(glob, '\[!', '[^', 'g'))
+  endif
+  return globs
 endfunction
 
 " Public Interface {{{1
@@ -144,6 +208,34 @@ function! editorconfig#init(...)
   endfor
   let config.global.root = root
   return config
+endfunction
+
+function! editorconfig#set(options)
+  for [name, value] in items(a:options)
+    let fname = s:snake_to_camel(name)
+    if exists('*' . fname)
+      call call(fname, [value, bufnr('.')])
+    else
+      call s:set_option(name, value, bufnr('.'))
+    endif
+  endfor
+endfunction
+
+function! editorconfig#process(config)
+  let config = a:config
+  for glob in config.glob_list
+    let options = config.globs[glob]
+    for vimglob in s:glob_to_vim(glob)
+      if expand('%') =~ glob2regpat(vimglob)
+        call editorconfig#set(options)
+      endif
+    endfor
+  endfor
+endfunction
+
+function! editorconfig#run(...)
+  let path = a:0 ? a:1 : '.'
+  call editorconfig#process(editorconfig#init(path))
 endfunction
 
 " Teardown:{{{1
