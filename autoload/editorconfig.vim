@@ -50,9 +50,9 @@ function! s:set_option(option, value, bufnr)
         \    '^\d\+$'  : ['setlocal ts=8 sts=' . a:value . ' sw=' . a:value]
         \  }
         \ ,'end_of_line'              : {
-        \    'lf'   : ['setlocal ff=unix']
-        \   ,'cr'   : ['setlocal ff=mac']
-        \   ,'crlf' : ['setlocal ff=dos']
+        \    'lf'   : ['edit ++ff=unix']
+        \   ,'cr'   : ['edit ++ff=mac']
+        \   ,'crlf' : ['edit ++ff=dos']
         \  }
         \ ,'charset'                  : {
         \    'latin1'   : ['edit ++enc=' . a:value]
@@ -72,7 +72,14 @@ function! s:set_option(option, value, bufnr)
         \    '^\d\+$'  : ['setlocal tw=' . a:value]
         \  }
         \}
+  if ! has_key(all_options, a:option)
+    echohl Warning
+    echom 'EditorConfig: Unhandled option ' . a:option
+    echohl NONE
+    return
+  endif
   let option = all_options[a:option]
+  let commands = []
   for subopt in keys(option)
     if a:value =~ subopt
       let commands = option[subopt]
@@ -180,7 +187,7 @@ function! editorconfig#init(...)
   let config.glob_list = []
   let config.globs     = {}
 
-  for f in findfile("_editorconfig", path . ';', -1)
+  for f in findfile(".editorconfig", path . ';', -1)
     try
       let c = editorconfig#parse(f)
     catch /editorconfig#parse : Error/
