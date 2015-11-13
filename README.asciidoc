@@ -1,0 +1,36 @@
+== EditorConfig
+
+__Let's work as a team and do it *my* way.__
+
+TIP: If you like EditorConfig and want to share the W00t!, I'm grateful
+for https://www.gittip.com/bairuidahu/[tips] or
+http://of-vim-and-vigor.blogspot.com/[beverages].
+
+NOTE: This is currently an alpha quality plugin. Feedback welcome.
+
+=== `:EditorConfig`
+
+The `:EditorConfig` command will apply the discovered settings
+appropriate to the current file.
+
+By default, this command will search upwards from the directory of the
+__current file__ until encountering an `.editorconfig` file containing
+an entry in its default section of:
+
+  root = true
+
+Call `:EditorConfig a-vim-style-file-searching-path` to override this behaviour.
+
+You will probably want to use an `:autocmd` to have `:EditorConfig`
+called for you on certain filetypes.
+
+The standard _EditorConfig_ options are implemented in hopefully sane
+ways, but if you disagree or want to support a user-defined value,
+create a function with the same name as the option, but in CamelCase not
+snake_case. For example, if you want to provide custom behaviour for the
+`end_of_line` option, create a function called `EndOfLine(value, bufnr)`.
+
+NOTE: For new files, the value of `bufnr` will be `-1` and therefore
+useless. Not that `bufnr` is intended to be used at all -- it's only
+provided in case of emergencies. It may be removed if proven as useless
+as it is suspected to be.
