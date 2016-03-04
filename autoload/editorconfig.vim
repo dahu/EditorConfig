@@ -186,6 +186,7 @@ function! editorconfig#init(...)
   let config.global    = {}
   let config.glob_list = []
   let config.globs     = {}
+  let root             = ''
 
   for f in findfile(".editorconfig", path . ';', -1)
     try
